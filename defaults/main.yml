@@ -1,0 +1,5 @@
+extra_vars:
+git_url:
+git_version: master
+playbook_name: site.yml
+work_dir: /tmp/ansible

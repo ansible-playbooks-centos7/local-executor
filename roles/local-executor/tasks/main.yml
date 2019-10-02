@@ -1,0 +1,46 @@
+- name: Delete working dir
+  file:
+    path: '{{ work_dir }}'
+    state: absent
+
+- name: Create working dir
+  file:
+    path: '{{ work_dir }}'
+    state: directory
+    recurse: yes
+
+- name: Git clone playbook
+  git:
+    repo: '{{ git_url }}'
+    dest: '{{ work_dir }}'
+    version: '{{ git_version }}'
+
+- name: Check if provided playbook name is valid | throws error if playbook name is invalid
+  command: "test -e {{ playbook_name }}"
+  args:
+    chdir: '{{ work_dir }}'
+
+- name: Install Ansible Galaxy roles
+  shell: "ansible-galaxy install -r roles/requirements.yml -p roles/"
+  args:
+    chdir: '{{ work_dir }}'
+  ignore_errors: yes
+
+- name: Execute ansible-playbook command
+  shell: "ansible-playbook -i localhost, -c local {{ playbook_name }} {{ extra_vars }} | tee logs"
+  args:
+    chdir: '{{ work_dir }}'
+
+- name: Check if Ansible connected to the host
+  shell: tail -n 2 logs
+  args:
+    chdir: '{{ work_dir }}'
+  register: result
+  failed_when: "'unreachable=0' not in result.stdout"
+
+- name: Check if ansible-playbook command succeeded
+  shell: tail -n 2 logs
+  args:
+    chdir: '{{ work_dir }}'
+  register: result
+  failed_when: "'failed=0' not in result.stdout"
